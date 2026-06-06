@@ -1,0 +1,38 @@
+{
+  "schema": "serenity.source_smoke_targets.v1",
+  "note": "Network integration targets. Tests are skipped unless SERENITY_RUN_NET_TESTS=1.",
+  "targets": [
+    {
+      "name": "Eastmoney homepage",
+      "url": "https://www.eastmoney.com/",
+      "expect_any": ["东方财富", "eastmoney", "Eastmoney"],
+      "min_bytes": 2000
+    },
+    {
+      "name": "Eastmoney notices hub",
+      "url": "https://data.eastmoney.com/notices/",
+      "expect_any": ["公告", "notices", "数据"],
+      "min_bytes": 2000
+    },
+    {
+      "name": "Eastmoney Caifuhao",
+      "url": "https://caifuhao.eastmoney.com/",
+      "expect_any": ["财富号", "caifuhao", "东方财富"],
+      "min_bytes": 2000
+    },
+    {
+      "name": "10jqka homepage",
+      "url": "https://www.10jqka.com.cn/",
+      "expect_any": ["同花顺", "10jqka"],
+      "min_bytes": 2000
+    },
+    {
+      "name": "Xueqiu homepage",
+      "url": "https://xueqiu.com/",
+      "expect_any": ["雪球", "xueqiu", "aliyun_waf", "_waf_"],
+      "blocked_markers": ["aliyun_waf", "_waf_"],
+      "allow_blocked": true,
+      "min_bytes": 2000
+    }
+  ]
+}

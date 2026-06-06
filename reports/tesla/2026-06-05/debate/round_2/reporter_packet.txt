@@ -1,0 +1,123 @@
+You are the Reporter agent revising an existing thesis pack after a hostile Judge verdict.
+
+Rules:
+- Do not hand-wave. Either add evidence, tighten claims, or remove unsupported assertions.
+- If a claim cannot be supported within the available public channels, downgrade confidence and rewrite the claim to be falsifiable.
+- Do not label any company “Anchor-confirmed” unless it meets the confirmation rules.
+
+Deliver:
+- A revised thesis-pack markdown (same file path).
+- A short “Change log” section at the end listing what you changed and what evidence you added.
+
+Inputs you will receive:
+- Thesis pack path + current text
+- Judge verdict text (REVISE/REJECT with required changes)
+
+---
+
+INPUTS
+Thesis pack path to edit: /Users/bytedance/Documents/选股skill/serenity-bottleneck-scout/reports/tesla/2026-06-05/tesla-optimus-robot-us-china-multi-round-debate.md
+Judge verdict path: /Users/bytedance/Documents/选股skill/serenity-bottleneck-scout/reports/tesla/2026-06-05/judge/multi_round_debate/round_1/judge_verdict.md
+
+Judge verdict text:
+# Verifier Judge Verdict — Round 1
+
+Task: Tesla Optimus robot (US + China) — multi-round debate  
+Date: 2026-06-05  
+Verdict: **REVISE**
+
+## Summary
+
+The pack is method-disciplined (“map-first”, falsifiers, explicit evidence gaps, no fake supplier certainty), but it fails most “must-be-true” requirements today: demand is not independently confirmed, no must-pass gate is demonstrated, supplier concentration/qualification friction is unmeasured, lead-time/backlog evidence is absent, and value-capture linkage to financials is speculative. It’s a strong verification plan, but not yet a chokepoint/bottleneck proof.
+
+## Required fixes (high priority)
+
+- Add ≥2 independent primary signals for demand (units/run-rate/deployments), beyond intent language.
+- Drop or prove chokepoint framing: motor-core is likely a bottleneck candidate, not a must-pass cross-ecosystem gate.
+- Add measured bottleneck evidence for the chosen node (lead times/backlog/capex/yield) or keep it explicitly as a gap.
+- Tie value capture to specific public-company line items (or explicitly mark “unassigned/unknown”).
+- Include auditable anchor excerpts (short quotes + page/section references) for Tesla primary sources.
+
+
+Supplier confirmation rules:
+# Supplier confirmation rules (anchor company)
+
+Use these rules whenever you label a company as a supplier to the **anchor company** in your report.
+
+## Allowed labels
+
+- **Anchor-confirmed**: backed by at least one high-quality primary source (see below).
+- **Not confirmed**: credible evidence suggests it is *not* a supplier, or it is only a generic category supplier with no program tie.
+- **Unknown**: anything else (most cases).
+
+## What counts as “Anchor-confirmed” (preferred → acceptable)
+
+1) Anchor company primary sources
+- Anchor company SEC filings naming the supplier
+- Anchor company IR decks / official blog / press releases naming the supplier
+
+2) Supplier primary sources
+- Supplier SEC filing / annual report explicitly naming the anchor company and the relevant program/category, with dates
+
+3) Joint confirmation
+- A joint press release or two-sided announcement where both the anchor company and the supplier are named
+
+## What does NOT count
+
+- Single-source media claims without primary-source backing
+- “Supply chain research says X%” without citations to filings/official documents
+- Teardowns with unclear provenance
+
+## Minimum evidence note standard
+
+When you mark **Anchor-confirmed**, include:
+- source type (Anchor filing / Supplier filing / Joint PR)
+- publication date
+- a URL or document path
+
+Debate protocol:
+# Multi-round debate workflow (Reporter ⇄ Verifier Judge)
+
+Use this workflow to force iterative improvement of a thesis pack.
+
+Roles:
+- **Reporter**: produces and revises the thesis pack.
+- **Verifier Judge**: hostile reviewer; demands evidence, falsifiability, and clear chokepoint vs bottleneck separation.
+
+Goal:
+- Run multiple rounds until the Judge returns **APPROVE**, or you stop at a defined max round.
+
+Recommended max rounds: 3–5.
+
+## Round 0: Setup
+
+- Create the report skeleton using `scripts/new_serenity_report.py`.
+- Generate default claims using `assets/tools/generate_claims.py`.
+- Ensure the report includes the “component-first universe” appendix with **anchor supplier status** labels.
+
+## Round 1..N (loop)
+
+### Reporter (draft/revise)
+
+Reporter must:
+- Update the thesis pack to address the last Judge verdict.
+- Keep changes evidence-first (add citations/quotes/links, not just narrative).
+- Maintain a short list of “must-be-true” claims and make them testable.
+- Apply supplier confirmation rules from `assets/templates/supplier_confirmation_rules.md`.
+
+### Verifier Judge (review)
+
+Use `assets/templates/judge_prompt.md`. Attach:
+- thesis pack text (or file path)
+- claims list
+- (optional) filing snippets from `assets/tools/extract_filing_snippets.py`
+
+Judge must output:
+- Verdict: **APPROVE / REVISE / REJECT**
+- Required changes (concrete, evidence-channel-specific)
+
+## Convergence rule (when to stop)
+
+- **APPROVE**: stop, publish report.
+- **REJECT**: stop; thesis lacks evidence or is structurally non-falsifiable.
+- **REVISE**: loop another round, but only if you can name the missing evidence and a concrete plan to obtain it.

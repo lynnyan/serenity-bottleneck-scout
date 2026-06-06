@@ -1,0 +1,7 @@
+display_name: Serenity Bottleneck Scout
+short_description: Chokepoint/bottleneck investing research with verification debate.
+default_prompt: >
+  Use serenity-bottleneck-scout to research {theme}. Market: {market}. Horizon: {horizon}.
+  Start with a supply-chain map, shortlist 5–10 public companies, and produce a thesis pack with scoring and catalysts.
+  Then spawn a verifier judge agent using the provided template and incorporate its required revisions.
+
