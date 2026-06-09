@@ -33,6 +33,20 @@
       "blocked_markers": ["aliyun_waf", "_waf_"],
       "allow_blocked": true,
       "min_bytes": 2000
+    },
+    {
+      "name": "SSE static disclosure PDF (may be WAF)",
+      "url": "https://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2023-04-15/688017_20230415_TXWQ.pdf",
+      "expect_any": ["%PDF", "var arg1", "<html", "static.sse.com.cn"],
+      "blocked_markers": ["var arg1", "aliyun_waf", "_waf_"],
+      "allow_blocked": true,
+      "min_bytes": 500
+    },
+    {
+      "name": "CNINFO homepage",
+      "url": "https://www.cninfo.com.cn/",
+      "expect_any": ["cninfo", "巨潮资讯", "cninfo.com.cn"],
+      "min_bytes": 2000
     }
   ]
 }

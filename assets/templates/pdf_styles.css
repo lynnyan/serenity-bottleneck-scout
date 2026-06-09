@@ -27,6 +27,8 @@ th, td {
   border: 1px solid #ddd;
   padding: 6px 8px;
   vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 th {
@@ -56,4 +58,3 @@ a {
   color: #0b57d0;
   text-decoration: none;
 }
-

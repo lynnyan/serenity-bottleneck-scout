@@ -29,12 +29,16 @@ metadata:
 
 ## 输出（交付物）
 
-1) 供应链地图（原料 → 衬底 → 器件 → 模块 → 系统 → 终端客户）+ 地理/政策暴露  
-2) 候选标准字段表（统一模板）  
-3) 100 分制打分 + 解释  
-4) 催化剂时钟（3–9 个月硬催化；12–18 个月确认催化）  
-5) Bear case / 反证线索 + 纪律（一般性，不个性化）  
-6) **审判结论**（APPROVE / REVISE / REJECT）：由 spawn 出来的 verifier/judge agent 给出  
+默认输出为 **1 份综合报告**（Thesis Pack + Investment Ideas 同文档），包含：
+
+1) 供应链地图（原料 → 器件 → 模块 → 系统 → 终端）+ 地理/政策暴露（PDF 对齐版优先：表格）  
+2) chokepoint（必经口）与 bottleneck（供给瓶颈）分层：**VERIFIED vs HYPOTHESIS**（避免把假设写成事实）  
+3) 候选标准字段表（统一模板）  
+4) 100 分制打分 + 解释（若 bottleneck 证据不足，必须显式降级）  
+5) **投资建议（非个性化）**：明确公司建议（Tier A/B/C）+ 每条推荐的 `Evidence grade (A/B/C/D)`  
+6) 催化剂时钟（3–9 个月硬催化；12–18 个月确认催化）  
+7) Bear case / 反证线索 + 纪律（一般性，不个性化）  
+8) **审判结论**（APPROVE / REVISE / REJECT）：由 spawn 出来的 verifier/judge agent 给出  
 
 模板位于：`assets/templates/`。
 
@@ -56,6 +60,7 @@ metadata:
 说明：
 - 首次运行可能通过 `npx` 下载 `md-to-pdf` 渲染器（需要网络）。
 - Markdown 为“事实源”；PDF 仅为渲染产物。
+- 渲染前会进行 Markdown 预检（`scripts/md_preflight.py`）：自动修复常见表格分隔行列数错误，并对不可分享的本地路径引用给出警告。
 
 ## 核心定义
 
@@ -73,6 +78,10 @@ metadata:
 2) **画完整供应链图**
    - 必须包含：物理步骤 + 关键供应商 + 关键设备 + 地理/政策点
    - 阈值：找到“下游无法绕过”的节点；最好 ≤3 家可信供应商
+   - **强制补充（避免漏线索）**：对涉及 CN 供应商/零部件节点，必须回溯交易所披露系统公告 PDF（SSE/SZSE/CNINFO/HKEX 等），并用 `supplychain_leads` 关键词组做一次线索扫描（详见 `references/info_channels.md` 的 1.5 节）。
+   - **强制补充（确保不丢失线索；覆盖 US / CN / Other）**：每次任务必须用 `assets/tools/you_search_api.py` 做“线索面（lead surface）扫面”，把原始搜索结果 **落盘保存**（默认仅作 T4 线索/导航，不当作一手证据），并做到：
+     - 把“最可行动的线索”写入研报 **1.5 表格**（明确升级路径：下一步要去抓哪份公告/财报/IR/监管披露/联合 PR 才能升级证据等级）；
+     - 保留完整的原始搜索结果 Markdown 作为附录，确保后续迭代不会丢线索。
 3) **判定 chokepoint**
    - 证据：标准/MSA/PDK、平台接入、design-in/qualification、伙伴生态
    - 阈值：连接 ≥2 个 Tier-1 下游生态，或处在标准/平台入口
@@ -94,11 +103,14 @@ metadata:
 打开并按其指引执行：
 - `references/info_channels.md`（每个渠道要抓的字段、为什么重要、以及如何用脚本半自动化）
   - 已包含“权威人士公开表述（创始人/CEO/CTO）”渠道，以及“新数据源沉淀”机制。
+  - 已包含 **Serenity Twitter/X** 线索渠道（默认 T4，仅作导航；用于保全弱信号供应链线索，避免迭代丢失）。
 
 可用脚本（按需）：
 - SEC 财报下载：`assets/tools/sec_edgar.py`
 - 财报关键段落抽取（risk/backlog/capex/geo）：`assets/tools/extract_filing_snippets.py`
-- PDF 关键段落抽取（risk/backlog/capex/geo）：`assets/tools/extract_pdf_snippets.py`
+- PDF 关键段落抽取（risk/backlog/capex/geo + supplychain_leads）：`assets/tools/extract_pdf_snippets.py`
+- Web 搜索（You Search API；provider：ModelHub；仅作线索导航；**强制线索面扫面**）：`assets/tools/you_search_api.py`
+- 交易所公告/披露 PDF 批量线索捕捉：`scripts/filing_lead_hunter.py`
 - 股价/成交量 OHLCV：`assets/tools/price_ohlcv.py`
 - RSS/PR 抓取：`assets/tools/rss_watch.py`
 - 网页/公告快照抓取（HTML/PDF + 元信息）：`assets/tools/fetch_snapshot.py`
@@ -109,6 +121,19 @@ metadata:
 - 多轮辩论打包（Reporter packet + claims）：`scripts/debate_bundle.py`
 - 外部数据源可用性冒烟测试（可选网络集成测试）：`scripts/source_smoke_test.py`（目标：`references/source_smoke_targets.json`）
 - PDF 渲染（Markdown → PDF）：`scripts/render_report_pdf.py`
+
+## 线索保全（强制）
+
+为了做到“供应链调研尽可能深”且 **不丢失弱信号线索**，每次任务必须保全原始线索面：
+
+- You-search 原始结果统一保存到：
+  - `reports/<company>/<YYYY-MM-DD>/<run>/sources/leads/you_search/`
+- 最低要求：
+  - 每个区域桶至少 1 次（US / CN / Other）
+  - 每个关键节点关键词组至少 1 次（例如：actuator / reducer / roller screw / tactile / encoder / harness）
+- 输出要求：
+  - 研报 **1.5** 必须包含 Top leads（即使未验证也要写，`Evidence grade = D`），并给出“升级路径”（下一步要抓的原文类型与入口）。
+  - 研报中给出附录指向原始 results 文件，确保线索可复用。
 
 ## 反向辩论 / 审判验证（spawn judge agent）
 

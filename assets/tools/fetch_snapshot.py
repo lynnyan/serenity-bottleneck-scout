@@ -4,9 +4,11 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import gzip
 import json
 from pathlib import Path
 import re
+import ssl
 import urllib.error
 import urllib.request
 
@@ -24,6 +26,7 @@ class Result:
     final_url: str
     status: int
     content_type: str
+    content_encoding: str
     bytes: int
     fetched_at: str
     out_path: str
@@ -53,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--referer", default="")
     p.add_argument("--accept", default="*/*")
     p.add_argument("--max-bytes", type=int, default=25_000_000, help="Abort if body exceeds this size")
+    p.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification (use sparingly)")
     return p.parse_args()
 
 
@@ -74,21 +78,41 @@ def main() -> int:
 
     fetched_at = _iso_now()
     title = ""
+    content_encoding = ""
+    ctx = None
+    if args.insecure:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
     try:
-        with urllib.request.urlopen(req, timeout=args.timeout) as resp:
+        with urllib.request.urlopen(req, timeout=args.timeout, context=ctx) as resp:
             status = getattr(resp, "status", 200)
             final_url = resp.geturl()
             content_type = resp.headers.get("Content-Type", "")
+            content_encoding = (resp.headers.get("Content-Encoding", "") or "").strip()
 
             data = resp.read(args.max_bytes + 1)
             if len(data) > args.max_bytes:
                 raise SystemExit(f"Body too large (> {args.max_bytes} bytes).")
 
-            out_path.write_bytes(data)
+            body = data
+            # Some sources (e.g., exchange static domains) may serve gzipped bytes even for PDF links.
+            # urllib does not always transparently decode this, so we handle it explicitly.
+            should_try_gzip = "gzip" in content_encoding.lower() or body[:2] == b"\x1f\x8b"
+            if should_try_gzip:
+                try:
+                    decompressed = gzip.decompress(body)
+                    if len(decompressed) <= args.max_bytes:
+                        body = decompressed
+                except Exception:
+                    pass
+
+            out_path.write_bytes(body)
 
             if "text/html" in content_type.lower():
                 try:
-                    html = data.decode("utf-8", errors="ignore")
+                    html = body.decode("utf-8", errors="ignore")
                 except Exception:
                     html = ""
                 title = _guess_title(html)
@@ -96,6 +120,7 @@ def main() -> int:
         status = int(getattr(e, "code", 0) or 0)
         final_url = args.url
         content_type = str(getattr(e, "headers", {}).get("Content-Type", ""))
+        content_encoding = str(getattr(e, "headers", {}).get("Content-Encoding", ""))
         data = e.read() if hasattr(e, "read") else b""
         out_path.write_bytes(data)
     except urllib.error.URLError as e:
@@ -106,6 +131,7 @@ def main() -> int:
         final_url=final_url,
         status=status,
         content_type=content_type,
+        content_encoding=content_encoding,
         bytes=int(out_path.stat().st_size) if out_path.exists() else 0,
         fetched_at=fetched_at,
         out_path=str(out_path),
@@ -119,4 +145,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import gzip
 import json
 from pathlib import Path
 import sys
@@ -101,7 +102,14 @@ def main() -> int:
             status, ctype, data, final_url = _fetch(t.url, args.timeout, args.user_agent)
             text = ""
             try:
-                text = data.decode("utf-8", errors="ignore").lower()
+                probe = data
+                # Some sources may return gzipped bytes even without a transparent decoder.
+                if probe[:2] == b"\x1f\x8b":
+                    try:
+                        probe = gzip.decompress(probe)
+                    except Exception:
+                        probe = data
+                text = probe.decode("utf-8", errors="ignore").lower()
             except Exception:
                 text = ""
             ok = True

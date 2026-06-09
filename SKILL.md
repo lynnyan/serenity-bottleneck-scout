@@ -29,12 +29,16 @@ This skill turns the “bottleneck / chokepoint investing” method into a repea
 
 ## Output (deliverables)
 
-1) Supply-chain map (raw materials → substrates → devices → modules → systems → end customers) + key geography/policy exposures  
-2) Candidate table (standard fields)  
-3) Scoring (100-point) + explanation  
-4) Catalyst clock (3–9m hard catalysts; 12–18m confirmation catalysts)  
-5) Bear case / disconfirmers + position discipline (general, not personalized)  
-6) **Judge verdict** (APPROVE / REVISE / REJECT) from a spawned verifier agent
+Default output is **one integrated report** (thesis pack + investment ideas) containing:
+
+1) Supply-chain map (raw materials → devices → modules → systems → end customers) + geography/policy exposures (PDF-aligned tables preferred)  
+2) Explicit split: chokepoint/bottleneck **VERIFIED vs HYPOTHESIS** (never over-claim)  
+3) Candidate table (standard fields)  
+4) Scoring (100-point) + explanation (downgrade if bottleneck evidence is missing)  
+5) **Investment ideas (non-personalized)**: clear company list (Tier A/B/C) + `Evidence grade (A/B/C/D)` for each recommendation  
+6) Catalyst clock (3–9m hard catalysts; 12–18m confirmation catalysts)  
+7) Bear case / disconfirmers + discipline (general, not personalized)  
+8) **Judge verdict** (APPROVE / REVISE / REJECT) from a spawned verifier agent
 
 Use templates from `assets/templates/`.
 
@@ -56,6 +60,7 @@ Renderer:
 Notes:
 - The first run may download the `md-to-pdf` renderer via `npx` (network required).
 - Keep the Markdown as the source of truth; PDF is a rendered artifact.
+- A markdown preflight (`scripts/md_preflight.py`) runs before rendering to auto-fix common table issues and warn about non-shareable local paths.
 
 ## Core definitions
 
@@ -73,6 +78,10 @@ Use the exact steps below (adapted from the provided Serenity report):
 2) **Draw the full supply chain map**
    - Must include: physical steps + key vendors + critical equipment + geography/policy points
    - Threshold: identify nodes where downstream “cannot route around”; best if ≤3 credible suppliers
+   - **Mandatory add-on (don’t miss CN clues):** for CN vendors / components, trace back to exchange disclosure PDFs (SSE/SZSE/CNINFO/HKEX) and run a quick `supplychain_leads` keyword scan (see Section 1.5 in `references/info_channels.md`).
+   - **Mandatory add-on (don’t lose leads; all markets):** run a “lead sweep” with `assets/tools/you_search_api.py` for **US / CN / Other** and persist the raw results into the task folder. Treat these as **T4 leads/navigation** (not evidence), and always:
+     - paste the *top actionable leads* into Section **1.5** (with an explicit upgrade path to filings/IR/PR),
+     - keep a full raw-results appendix file so the lead surface is never lost.
 3) **Determine chokepoint**
    - Evidence: standards/MSA/PDK, platform access, design-in / qualification, partner ecosystem
    - Threshold: connects to ≥2 Tier-1 downstream players OR sits at a standards/platform gate
@@ -94,11 +103,14 @@ Use the exact steps below (adapted from the provided Serenity report):
 Open and follow:
 - `references/info_channels.md` (what to pull from each channel, why it matters, and how to automate)
   - Includes an “authority statements” channel (founder/CEO/CTO) and a “new source registry” mechanism.
+  - Includes a **Serenity Twitter/X** lead channel (T4, navigation only) to preserve weak-signal supply-chain leads without over-claiming.
 
 If you need scripts:
 - SEC filings helper: `assets/tools/sec_edgar.py`
 - Filing snippet extractor (risk/backlog/capex/geo): `assets/tools/extract_filing_snippets.py`
-- PDF snippet extractor (risk/backlog/capex/geo): `assets/tools/extract_pdf_snippets.py`
+- PDF snippet extractor (risk/backlog/capex/geo + supplychain_leads): `assets/tools/extract_pdf_snippets.py`
+- Web search (You Search API; provider: ModelHub; navigation only; **mandatory lead sweep**): `assets/tools/you_search_api.py`
+- Batch exchange/filing lead-hunter: `scripts/filing_lead_hunter.py`
 - Price/volume helper: `assets/tools/price_ohlcv.py`
 - RSS/PR helper: `assets/tools/rss_watch.py`
 - Snapshot fetcher (HTML/PDF snapshot + meta): `assets/tools/fetch_snapshot.py`
@@ -155,6 +167,19 @@ During a run, if you discover a new useful data source (official IR hub, confere
 Registry locations:
 - Global: `references/source_registry.md` and `references/source_registry.jsonl`
 - Per-task (optional): `reports/<company>/<YYYY-MM-DD>/<run>/sources/source_registry_task.md`
+
+## Lead preservation (mandatory)
+
+To ensure supply-chain research is “as deep as possible” **without losing weak-signal leads**, every run must preserve a raw “lead surface” artifact:
+
+- Save all You-search raw results under:
+  - `reports/<company>/<YYYY-MM-DD>/<run>/sources/leads/you_search/`
+- Minimum requirement:
+  - ≥1 sweep per region bucket (US / CN / Other)
+  - ≥1 sweep per critical node keyword set (e.g., actuator / reducer / roller screw / tactile / encoder / harness)
+- Output requirements:
+  - In the thesis pack, Section **1.5** must include the top leads (even if unverified) with `Evidence grade = D` and a concrete “upgrade path” pointing to the primary disclosure you will fetch next.
+  - Include an appendix link to the raw results markdown file(s) so future iterations can re-mine them.
 
 ## Default report workflow (local files)
 

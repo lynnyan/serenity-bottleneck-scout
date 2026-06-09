@@ -16,6 +16,70 @@
 - US 公司：`assets/tools/sec_edgar.py` 拉取 10-K/10-Q/8-K 并定位风险因素/业务结构等段落。
 - 抽取关键段落（risk/backlog/capex/geo）：先用 `assets/tools/sec_edgar.py --download` 下载 primary doc，再用 `assets/tools/extract_filing_snippets.py --in <file>` 输出 `filing_snippets.md` 供快速定位。
 
+## 1.2) Web 搜索（仅作线索导航，不作一手证据）
+
+用途定位（默认 T4）：
+- 用来**避免漏掉独立博客/行业数据库/小站点**（例如某些人形机器人供应商梳理站），以及帮助你定位“原始公告/IR/监管披露”的入口链接。
+- **不能直接把搜索结果页面当证据**：要沿着链接回溯到交易所公告 PDF / 公司 IR / 监管披露等一手来源。
+
+推荐：**You Search API（provider：ModelHub；内置 key；更省事）**：`assets/tools/you_search_api.py`
+
+用法：
+- You Search API 基础搜索（输出到 Markdown）：\n  `python3 assets/tools/you_search_api.py --query "tesla optimus suppliers" --count 10 --out leads/you_search_optimus_suppliers.md`
+- You Search API 限域搜索（可选）：\n  `python3 assets/tools/you_search_api.py --query "tesla optimus suppliers" --include-domains "optimusk.blog" --out leads/you_search_site.md`
+
+落库（推荐）：
+- 对你判定“值得追踪”的站点，用 `assets/tools/register_source.py` 登记到 `references/source_registry.*`，并标注为 `T4`（线索/导航），同时写清“升级路径”（最终要引用到哪个披露/IR 原文）。
+
+## 1.3) Serenity Twitter / X（仅作线索导航；不丢失弱信号）
+
+用途定位（默认 T4）：
+- 将 Serenity 在 Twitter/X 上发布的观点/线索作为“线索面（lead surface）”的一部分：用于捕捉 **供应链线索、关键节点猜想、潜在供应商名单、时间线与催化剂提醒**。
+- 这些内容通常属于二手解读或观点，**不能直接当作一手证据**；必须回溯到：交易所披露 PDF、公司 IR/SEC、伙伴双方 PR、标准组织文件等。
+
+必须保全的字段（避免线索在迭代中丢失）：
+- Tweet 链接（可分享 URL）+ 发布时间（timestamp）+ 原文摘录（≤1–2 句）
+- 它指向的“下一跳”证据入口（原文公告/IR/合同/采访/视频时间戳）
+- 你对它的证据分级：默认 `Evidence grade = D`，除非 Tweet 本身就是“Anchor/供应商/标准组织”的官方账号发布且内容具备可核验性。
+
+推荐工作流：
+1) 用 `assets/tools/you_search_api.py` 做限域搜索，把 Serenity Twitter/X 的相关结果落盘保存到任务目录：
+   - 示例：`python3 assets/tools/you_search_api.py --query "Serenity bottleneck Optimus supply chain" --include-domains "x.com,twitter.com" --out reports/<company>/<date>/<run>/sources/leads/you_search/serenity_x.md`
+2) 在研报 Section **1.5**（交易所披露线索表）新增一行或多行：
+   - `Lead (what we saw)` 写 Tweet 的核心线索
+   - `Primary filing` 留空或写“待回溯”
+   - `Evidence grade` 写 `D`
+   - `Upgrade path` 写清楚下一步要抓哪份披露（SSE/SZSE/CNINFO/HKEX/SEC/IR/双方 PR）
+3) 若 Tweet 指向了关键 PDF/IR/公告：
+   - 立刻用 `assets/tools/fetch_snapshot.py` 保存原文快照到 `reports/<company>/<date>/<run>/sources/` 并登记到 source registry（T1/T2/T3 取决于原文类型）。
+
+## 1.5) 交易所披露系统（SSE / SZSE / CNINFO / HKEX；供应链线索“必抓”）
+
+用途定位（强烈推荐 T1/T2）：
+- 供应链研究里，很多关键线索不会写在新闻稿里，而是出现在：**年度报告/临时公告/重大合同/对外投资/设立合资公司/海外园区布局**等披露文件里。
+- 典型例子：公告里一句“与某公司在墨西哥园区共同出资设立合资企业”，即可把两家供应链节点**物理链接**起来（尤其适用于机器人/汽车零部件的 Tier-2 线索）。
+
+你要抓的关键词（优先用原文 PDF grep/snippet）：
+- 客户/供应商确认：`客户` / `供应商` / `Tier` / `定点` / `design-in` / `qualification`
+- 合作与出海：`合资` / `共同出资` / `设立` / `协议` / `战略合作` / `Mexico` / `墨西哥` / `园区` / `工业园`
+- 机器人相关：`人形机器人` / `机器人` / `减速器` / `丝杠` / `轴承` / `编码器` / `actuator`
+
+强制工作流（避免漏线索）：
+1) **先定位原文 PDF**（不引用聚合转述）：
+   - 公告聚合平台可用于“导航”（默认 D）：东方财富/同花顺/雪球
+   - 但最终 References 必须回溯到原文披露系统（SSE/SZSE/CNINFO/HKEX）的 PDF 链接
+2) **对公告 PDF 跑线索提取**（快速扫盲，不代替全文阅读）：
+   - 单文件：`python3 assets/tools/extract_pdf_snippets.py --in <file.pdf> --out <snips.md> --groups supplychain_leads,geo,capex`
+   - 多链接批量：`python3 scripts/filing_lead_hunter.py --url-file urls.txt --out-dir leads/`
+3) **把“线索 → 证据升级路径”写进研报**：
+   - 线索来自公告原文 = 证据等级可到 A（监管披露）
+   - 但“是否为某单一客户（如 Tesla）的供应商”仍需：双方文件/合同披露/明确客户名单 等进一步确认（避免把关系写死）
+
+常见坑（必须规避）：
+- 部分交易所静态域名可能有 WAF/JS 挑战，自动化脚本会下载到 HTML 而不是 PDF。
+  - 识别方法：下载文件不是 `%PDF` 开头；`extract_pdf_snippets.py` 会直接报 “Input is HTML, not a PDF”。
+  - 处理方法：用真实浏览器打开链接下载 PDF，再对本地 PDF 跑提取脚本。
+
 ## 2) 伙伴合作与客户 PR（验证生态位的最强证据之一）
 
 要抓的字段：
